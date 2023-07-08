@@ -2,7 +2,8 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from app.api.models import Movie
+from app.api.models import MovieIn, MovieOut, MovieUpdate
+from app.api import db_manager
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -11,43 +12,42 @@ formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(name)s:%(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-fake_movie_db = [
-    {
-        'name': 'Star Wars: Episode IX - The Rise of Skywalker',
-        'plot': 'The surviving members of the resistance face the First Order once again.',
-        'genres': ['Action', 'Adventure', 'Fantasy'],
-        'casts': ['Daisy Ridley', 'Adam Driver']
-    }
-]
-
 movies = APIRouter()
 
 
-@movies.get('/', response_model=list[Movie])
+@movies.get('/', response_model=list[MovieOut])
 async def index():
-    return fake_movie_db
+    return await db_manager.get_all_movies()
 
 
 @movies.post('/movies', status_code=201)
-async def add_movie(payload: Movie):
+async def add_movie(payload: MovieIn):
     logger.info(payload)
-    movie = payload.model_dump()
-    fake_movie_db.append(movie)
-    return {'id': len(fake_movie_db) - 1}
+    movie_id = await db_manager.add_movie(payload)
+    response = {
+        'id': movie_id,
+        **payload.model_dump()
+    }
+    return response
 
 
-@movies.put('/movies/{movie_id}')
-def update_movie(movie_id: int, payload: Movie):
-    if 0 <= movie_id < len(fake_movie_db):
-        movie = payload.model_dump()
-        fake_movie_db[movie_id] = movie
-        return None
-    raise HTTPException(status_code=404, detail='Movie with given id not found')
+@movies.put('/{movie_id}')
+async def update_movie(movie_id: int, payload: MovieUpdate):
+    movie = await db_manager.get_movie(movie_id)
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    movie_in_db = MovieIn(**movie)
+
+    updated_movie = movie_in_db.model_copy(update=update_data)
+
+    return await db_manager.update_movie(movie_id, updated_movie)
 
 
 @movies.delete('/movies/{movie_id}')
-def delete_movie(movie_id: int):
-    if 0 <= movie_id < len(fake_movie_db):
-        del fake_movie_db[movie_id]
-        return None
-    raise HTTPException(status_code=404, detail='Movie with given id not found')
+async def delete_movie(movie_id: int):
+    movie = await db_manager.get_movie(movie_id)
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    return await db_manager.delete_movie(movie_id)
