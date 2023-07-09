@@ -20,6 +20,14 @@ async def index():
     return await db_manager.get_all_movies()
 
 
+@movies.get('/{id}', response_model=MovieOut)
+async def index(id: int):
+    movie = await db_manager.get_movie(id)
+    if not movie:
+        raise HTTPException(status_code=404, detail="Movie not found")
+    return movie
+
+
 @movies.post('/', status_code=201)
 async def add_movie(payload: MovieIn):
     for cast_id in payload.casts_id:
