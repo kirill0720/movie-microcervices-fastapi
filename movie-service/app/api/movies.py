@@ -2,8 +2,9 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 
-from app.api.models import MovieIn, MovieOut, MovieUpdate
 from app.api import db_manager
+from app.api.models import MovieIn, MovieOut, MovieUpdate
+from app.api.service import is_cast_present
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
