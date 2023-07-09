@@ -5,7 +5,7 @@ class MovieIn(BaseModel):
     name: str
     plot: str
     genres: list[str]
-    casts: list[int]
+    casts_id: list[int]
 
 
 class MovieOut(MovieIn):
