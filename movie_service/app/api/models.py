@@ -5,7 +5,7 @@ class MovieIn(BaseModel):
     name: str
     plot: str
     genres: list[str]
-    casts: list[str]
+    casts: list[int]
 
 
 class MovieOut(MovieIn):
@@ -16,4 +16,4 @@ class MovieUpdate(MovieIn):
     name: str | None = None
     plot: str | None = None
     genres: list[str] | None = None
-    casts: list[str] | None = None
+    casts_id: list[int] | None = None

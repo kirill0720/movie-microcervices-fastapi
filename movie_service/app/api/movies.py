@@ -22,12 +22,18 @@ async def index():
 
 @movies.post('/movies', status_code=201)
 async def add_movie(payload: MovieIn):
-    logger.info(payload)
+    for cast_id in payload.casts_id:
+        if not is_cast_present(cast_id):
+            raise HTTPException(status_code=404, detail=f"Cast with id:{cast_id} not found")
+
     movie_id = await db_manager.add_movie(payload)
     response = {
         'id': movie_id,
         **payload.model_dump()
     }
+
+    logger.info(payload)
+
     return response
 
 
@@ -38,6 +44,12 @@ async def update_movie(movie_id: int, payload: MovieUpdate):
         raise HTTPException(status_code=404, detail="Movie not found")
 
     update_data = payload.model_dump(exclude_unset=True)
+
+    if 'casts_id' in update_data:
+        for cast_id in payload.casts_id:
+            if not is_cast_present(cast_id):
+                raise HTTPException(status_code=404, detail=f"Cast with given id:{cast_id} not found")
+
     movie_in_db = MovieIn(**movie)
 
     updated_movie = movie_in_db.model_copy(update=update_data)
